@@ -19,6 +19,18 @@ const userSchema = new mongoose.Schema({
   description: { type: String, default: "" },
   occupation: { type: String, default: "" },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  friends: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    default: [],
+  },
+  incomingRequests: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    default: [],
+  },
+  outgoingRequests: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    default: [],
+  },
 }, { timestamps: true })
 
 const User = mongoose.model("User", userSchema);

@@ -78,6 +78,24 @@ export function imageUrl(fileName) {
     return `${API_URL}/images/${fileName}`;
 }
 
+// ===== Friendships =====
+export const friendsApi = {
+    status: (userId) => api.get(`/user/${userId}/friend-status`),
+    sendRequest: (userId) => api.post(`/user/${userId}/friend-request`, {}),
+    accept: (userId) => api.post(`/user/${userId}/friend-accept`, {}),
+    reject: (userId) => api.post(`/user/${userId}/friend-reject`, {}),
+    cancel: (userId) => api.post(`/user/${userId}/friend-cancel`, {}),
+    unfriend: (userId) => api.post(`/user/${userId}/unfriend`, {}),
+    list: (userId) => api.get(`/user/${userId}/friends`),
+    requests: () => api.get('/user/friend-requests'),
+};
+
+// ===== Photo likes =====
+export const photoLikesApi = {
+    like: (photoId) => api.post(`/photos/${photoId}/like`, {}),
+    unlike: (photoId) => api.del(`/photos/${photoId}/like`),
+};
+
 // ===== Uploads =====
 export async function uploadPhoto(file) {
     const token = getToken();

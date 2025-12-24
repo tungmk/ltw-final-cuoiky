@@ -12,6 +12,8 @@ import {
     deletePhoto,
     updateComment,
     deleteComment,
+    likePhoto,
+    unlikePhoto,
 } from '../controllers/photoController.js';
 
 
@@ -44,5 +46,7 @@ router.post('/commentsOfPhoto/:photo_id', addComment);
 router.put('/commentsOfPhoto/:photo_id/:comment_id', updateComment);
 router.delete('/commentsOfPhoto/:photo_id/:comment_id', deleteComment);
 router.delete('/photos/:id', deletePhoto);
+router.post('/photos/:id/like', likePhoto);
+router.delete('/photos/:id/like', unlikePhoto);
 
 export default router;

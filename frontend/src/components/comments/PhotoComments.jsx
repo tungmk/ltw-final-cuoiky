@@ -90,18 +90,21 @@ export default function PhotoComments({
                     <React.Fragment key={comment._id}>
                         <ListItem alignItems="flex-start" disableGutters>
                             <ListItemText
+                                disableTypography
                                 primary={
-                                    user?._id ? (
-                                        <Link to={`/users/${user._id}`}>
-                                            {user.first_name} {user.last_name}
-                                        </Link>
-                                    ) : (
-                                        "Unknown user"
-                                    )
+                                    <Box component="span">
+                                        {user?._id ? (
+                                            <Link to={`/users/${user._id}`}>
+                                                {user.first_name} {user.last_name}
+                                            </Link>
+                                        ) : (
+                                            "Unknown user"
+                                        )}
+                                    </Box>
                                 }
                                 secondary={
                                     <Box sx={{ position: "relative", pr: 14 }}>
-                                        <Typography variant="caption" display="block">
+                                        <Typography variant="caption" display="block" component="span">
                                             {formatDate(comment.date_time)}
                                         </Typography>
 
@@ -161,7 +164,7 @@ export default function PhotoComments({
                                                 </Box>
                                             </Box>
                                         ) : (
-                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                            <Typography variant="body2" sx={{ mt: 0.5 }} component="span">
                                                 {comment.comment}
                                             </Typography>
                                         )}

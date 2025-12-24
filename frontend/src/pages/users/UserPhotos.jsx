@@ -9,7 +9,7 @@ import {
     Button,
     Box,
 } from "@mui/material";
-import { api, getUser, imageUrl } from "../../config/api";
+import { api, getUser, imageUrl, photoLikesApi } from "../../config/api";
 import PhotoComments from "../../components/comments/PhotoComments";
 import { formatDate } from "../../utils/format";
 
@@ -21,37 +21,45 @@ export default function UserPhotos() {
     const [draft, setDraft] = useState({});
     const [submitting, setSubmitting] = useState({});
     const [deleting, setDeleting] = useState({});
+    const [liking, setLiking] = useState({});
 
-    const normalizePhoto = useCallback((p) => ({
-        ...p,
-        comments: p?.comments || [],
-    }), []);
+    const normalizePhoto = useCallback(
+        (p) => ({
+            ...p,
+            comments: p?.comments || [],
+            likes: p?.likes || [],
+        }),
+        []
+    );
 
-    const upsertPhoto = useCallback((photo) =>
-        setPhotos((prev) => {
-            const normalized = normalizePhoto(photo);
-            const list = prev || [];
-            const idx = list.findIndex((p) => p._id === normalized._id);
-            if (idx >= 0) {
-                const next = [...list];
-                next[idx] = normalized;
-                return next;
-            }
-            return [normalized, ...list];
-        }), [normalizePhoto]);
+    const upsertPhoto = useCallback(
+        (photo) =>
+            setPhotos((prev) => {
+                const normalized = normalizePhoto(photo);
+                const list = prev || [];
+                const idx = list.findIndex((p) => p._id === normalized._id);
+                if (idx >= 0) {
+                    const next = [...list];
+                    next[idx] = normalized;
+                    return next;
+                }
+                return [normalized, ...list];
+            }),
+        [normalizePhoto]
+    );
 
     useEffect(() => {
         let alive = true;
 
         (async () => {
             const data = await api.get(`/photosOfUser/${userId}`);
-            if (alive) setPhotos(data);
+            if (alive) setPhotos((data || []).map(normalizePhoto));
         })();
 
         return () => {
             alive = false;
         };
-    }, [userId]);
+    }, [userId, normalizePhoto]);
 
     useEffect(() => {
         const handleUploaded = (e) => {
@@ -79,7 +87,7 @@ export default function UserPhotos() {
             });
 
             setPhotos((prev) =>
-                (prev || []).map((p) => (p._id === photoId ? updatedPhoto : p))
+                (prev || []).map((p) => (p._id === photoId ? normalizePhoto(updatedPhoto) : p))
             );
 
             setDraft((p) => ({ ...p, [photoId]: "" }));
@@ -90,7 +98,7 @@ export default function UserPhotos() {
         }
     };
 
-    const updatePhotoInState = (updatedPhoto) => upsertPhoto(updatedPhoto);
+    const updatePhotoInState = (updatedPhoto) => upsertPhoto(normalizePhoto(updatedPhoto));
 
     const canDelete = (photo) => {
         if (!me) return false;
@@ -98,8 +106,14 @@ export default function UserPhotos() {
         return me.role === "admin" || String(ownerId) === me._id;
     };
 
+    const isLiked = (photo) => {
+        if (!me?._id) return false;
+        const likes = photo?.likes || [];
+        return likes.some((id) => String(id) === String(me._id));
+    };
+
     const handleDeletePhoto = async (photoId) => {
-        if (!window.confirm("Delete this photo?")) return;
+        if (!window.confirm("Xóa ảnh này?")) return;
         setDeleting((p) => ({ ...p, [photoId]: true }));
         try {
             await api.del(`/photos/${photoId}`);
@@ -123,7 +137,24 @@ export default function UserPhotos() {
         updatePhotoInState(updatedPhoto);
     };
 
-    if (!photos) return <div>Loading...</div>;
+    const toggleLike = async (photoId) => {
+        const target = (photos || []).find((p) => p._id === photoId);
+        if (!target || !me?._id) return;
+        const liked = isLiked(target);
+        setLiking((p) => ({ ...p, [photoId]: true }));
+        try {
+            const updated = liked
+                ? await photoLikesApi.unlike(photoId)
+                : await photoLikesApi.like(photoId);
+            updatePhotoInState(updated);
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            setLiking((p) => ({ ...p, [photoId]: false }));
+        }
+    };
+
+    if (!photos) return <div>Đang tải...</div>;
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -142,6 +173,21 @@ export default function UserPhotos() {
                         }}
                     />
 
+                    <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="caption">{formatDate(photo.date_time)}</Typography>
+                        {me && (
+                            <Button
+                                size="small"
+                                variant={isLiked(photo) ? "contained" : "outlined"}
+                                color="error"
+                                onClick={() => toggleLike(photo._id)}
+                                disabled={!!liking[photo._id]}
+                            >
+                                {isLiked(photo) ? "Bỏ thích" : "Thích"} ({photo.likes?.length || 0})
+                            </Button>
+                        )}
+                    </Box>
+
                     {canDelete(photo) && (
                         <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
                             <Button
@@ -155,10 +201,6 @@ export default function UserPhotos() {
                         </Box>
                     )}
 
-                    <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                        {formatDate(photo.date_time)}
-                    </Typography>
-
                     <PhotoComments
                         photoId={photo._id}
                         comments={photo.comments}
@@ -167,7 +209,6 @@ export default function UserPhotos() {
                         onDeleteComment={handleDeleteComment}
                     />
 
-                    {/* Add comment */}
                     {me && (
                         <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
                             <TextField
@@ -182,7 +223,7 @@ export default function UserPhotos() {
                                 onClick={() => submitComment(photo._id)}
                                 disabled={!!submitting[photo._id]}
                             >
-                                Đăng
+                                Gửi
                             </Button>
                         </Box>
                     )}

@@ -18,6 +18,10 @@ const photoSchema = new mongoose.Schema(
   {
     file_name: { type: String, required: true },
     date_time: { type: Date, default: Date.now },
+    likes: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
 
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -33,4 +37,3 @@ const photoSchema = new mongoose.Schema(
 
 const Photo = mongoose.model("Photo", photoSchema);
 export default Photo;
-

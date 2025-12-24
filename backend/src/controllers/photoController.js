@@ -16,6 +16,7 @@ function shapePhoto(doc) {
     const p = doc.toObject ? doc.toObject() : doc;
     return {
         ...p,
+        likes: p.likes || [],
         comments: (p.comments || []).map((c) => ({
             _id: c._id,
             comment: c.comment,
@@ -184,13 +185,68 @@ export async function deleteComment(req, res) {
             return res.status(403).json({ error: 'Not allowed to delete this comment' });
         }
 
-        cmt.remove();
+        photo.comments = (photo.comments || []).filter(
+            (c) => c._id?.toString() !== commentId
+        );
         await photo.save();
 
         const updated = await fetchPhotoWithComments(photoId);
         return res.status(200).json(shapePhoto(updated));
     } catch (err) {
         console.error('deleteComment error:', err);
+        return res.status(500).send('Server error');
+    }
+}
+
+// POST /photos/:id/like
+export async function likePhoto(req, res) {
+    try {
+        const photoId = req.params.id;
+        const userId = req.user?._id;
+
+        if (!userId) return res.sendStatus(401);
+        if (!isValidObjectId(photoId)) {
+            return res.status(400).json({ error: 'Invalid photo id' });
+        }
+
+        const photo = await Photo.findById(photoId);
+        if (!photo) return res.status(404).json({ error: 'Photo not found' });
+
+        const already = (photo.likes || []).some((id) => id.toString() === userId);
+        if (!already) {
+            photo.likes.push(userId);
+            await photo.save();
+        }
+
+        const updated = await fetchPhotoWithComments(photoId);
+        return res.status(200).json(shapePhoto(updated));
+    } catch (err) {
+        console.error('likePhoto error:', err);
+        return res.status(500).send('Server error');
+    }
+}
+
+// DELETE /photos/:id/like
+export async function unlikePhoto(req, res) {
+    try {
+        const photoId = req.params.id;
+        const userId = req.user?._id;
+
+        if (!userId) return res.sendStatus(401);
+        if (!isValidObjectId(photoId)) {
+            return res.status(400).json({ error: 'Invalid photo id' });
+        }
+
+        const photo = await Photo.findById(photoId);
+        if (!photo) return res.status(404).json({ error: 'Photo not found' });
+
+        photo.likes = (photo.likes || []).filter((id) => id.toString() !== userId);
+        await photo.save();
+
+        const updated = await fetchPhotoWithComments(photoId);
+        return res.status(200).json(shapePhoto(updated));
+    } catch (err) {
+        console.error('unlikePhoto error:', err);
         return res.status(500).send('Server error');
     }
 }

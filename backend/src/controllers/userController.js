@@ -3,7 +3,15 @@ import User from '../models/User.js';
 
 const USER_PUBLIC_FIELDS = '_id first_name last_name';
 const USER_DETAIL_FIELDS =
+    '_id first_name last_name location description occupation login_name friends incomingRequests outgoingRequests';
+
+const FULL_PUBLIC_FIELDS =
     '_id first_name last_name location description occupation login_name';
+
+const toStr = (id) => id?.toString();
+const hasId = (list = [], id) => list.some((v) => toStr(v) === toStr(id));
+const removeId = (list = [], id) => list.filter((v) => toStr(v) !== toStr(id));
+const ensureObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 // Get /user/list
 export async function getUserList(req, res) {
@@ -117,6 +125,277 @@ export async function register(req, res) {
             return res.status(400).json({ error: 'login_name already exists' });
         }
         console.error('Error register:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function getFriendStatus(req, res) {
+    try {
+        const targetId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!ensureObjectId(targetId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+        if (!currentId) return res.sendStatus(401);
+
+        if (toStr(targetId) === toStr(currentId)) {
+            return res.status(200).json({ status: 'self' });
+        }
+
+        const [currentUser, targetUser] = await Promise.all([
+            User.findById(currentId, 'friends incomingRequests outgoingRequests'),
+            User.findById(targetId, '_id'),
+        ]);
+
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+        if (!currentUser) return res.sendStatus(401);
+
+        if (hasId(currentUser.friends, targetId)) {
+            return res.status(200).json({ status: 'friends' });
+        }
+        if (hasId(currentUser.incomingRequests, targetId)) {
+            return res.status(200).json({ status: 'incoming' });
+        }
+        if (hasId(currentUser.outgoingRequests, targetId)) {
+            return res.status(200).json({ status: 'outgoing' });
+        }
+
+        return res.status(200).json({ status: 'none' });
+    } catch (error) {
+        console.error('Error getting friend status:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function sendFriendRequest(req, res) {
+    try {
+        const targetId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!currentId) return res.sendStatus(401);
+        if (!ensureObjectId(targetId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+        if (toStr(targetId) === toStr(currentId)) {
+            return res.status(400).json({ error: 'Cannot friend yourself' });
+        }
+
+        const [currentUser, targetUser] = await Promise.all([
+            User.findById(currentId),
+            User.findById(targetId),
+        ]);
+
+        if (!currentUser) return res.sendStatus(401);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        if (hasId(currentUser.friends, targetId)) {
+            return res.status(400).json({ error: 'Already friends' });
+        }
+
+        // If they already sent us a request, accept it instead.
+        if (hasId(currentUser.incomingRequests, targetId)) {
+            currentUser.incomingRequests = removeId(currentUser.incomingRequests, targetId);
+            targetUser.outgoingRequests = removeId(targetUser.outgoingRequests, currentId);
+
+            if (!hasId(currentUser.friends, targetId)) currentUser.friends.push(targetId);
+            if (!hasId(targetUser.friends, currentId)) targetUser.friends.push(currentId);
+
+            await Promise.all([currentUser.save(), targetUser.save()]);
+            return res.status(200).json({ status: 'friends' });
+        }
+
+        if (hasId(currentUser.outgoingRequests, targetId) || hasId(targetUser.incomingRequests, currentId)) {
+            return res.status(400).json({ error: 'Request already sent' });
+        }
+
+        currentUser.outgoingRequests.push(targetId);
+        targetUser.incomingRequests.push(currentId);
+
+        await Promise.all([currentUser.save(), targetUser.save()]);
+
+        return res.status(200).json({ status: 'outgoing' });
+    } catch (error) {
+        console.error('Error sending friend request:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function acceptFriendRequest(req, res) {
+    try {
+        const requesterId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!currentId) return res.sendStatus(401);
+        if (!ensureObjectId(requesterId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+
+        const [currentUser, requester] = await Promise.all([
+            User.findById(currentId),
+            User.findById(requesterId),
+        ]);
+
+        if (!currentUser) return res.sendStatus(401);
+        if (!requester) return res.status(404).json({ error: 'User not found' });
+
+        if (!hasId(currentUser.incomingRequests, requesterId)) {
+            return res.status(400).json({ error: 'No request to accept' });
+        }
+
+        currentUser.incomingRequests = removeId(currentUser.incomingRequests, requesterId);
+        requester.outgoingRequests = removeId(requester.outgoingRequests, currentId);
+
+        if (!hasId(currentUser.friends, requesterId)) currentUser.friends.push(requesterId);
+        if (!hasId(requester.friends, currentId)) requester.friends.push(currentId);
+
+        await Promise.all([currentUser.save(), requester.save()]);
+
+        return res.status(200).json({ status: 'friends' });
+    } catch (error) {
+        console.error('Error accepting friend request:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function rejectFriendRequest(req, res) {
+    try {
+        const requesterId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!currentId) return res.sendStatus(401);
+        if (!ensureObjectId(requesterId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+
+        const [currentUser, requester] = await Promise.all([
+            User.findById(currentId),
+            User.findById(requesterId),
+        ]);
+
+        if (!currentUser) return res.sendStatus(401);
+        if (!requester) return res.status(404).json({ error: 'User not found' });
+
+        currentUser.incomingRequests = removeId(currentUser.incomingRequests, requesterId);
+        requester.outgoingRequests = removeId(requester.outgoingRequests, currentId);
+
+        await Promise.all([currentUser.save(), requester.save()]);
+
+        return res.status(200).json({ status: 'none' });
+    } catch (error) {
+        console.error('Error rejecting friend request:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function cancelFriendRequest(req, res) {
+    try {
+        const targetId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!currentId) return res.sendStatus(401);
+        if (!ensureObjectId(targetId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+
+        const [currentUser, targetUser] = await Promise.all([
+            User.findById(currentId),
+            User.findById(targetId),
+        ]);
+
+        if (!currentUser) return res.sendStatus(401);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        currentUser.outgoingRequests = removeId(currentUser.outgoingRequests, targetId);
+        targetUser.incomingRequests = removeId(targetUser.incomingRequests, currentId);
+
+        await Promise.all([currentUser.save(), targetUser.save()]);
+
+        return res.status(200).json({ status: 'none' });
+    } catch (error) {
+        console.error('Error cancelling friend request:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function unfriend(req, res) {
+    try {
+        const targetId = req.params.id;
+        const currentId = req.user?._id;
+
+        if (!currentId) return res.sendStatus(401);
+        if (!ensureObjectId(targetId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+
+        const [currentUser, targetUser] = await Promise.all([
+            User.findById(currentId),
+            User.findById(targetId),
+        ]);
+
+        if (!currentUser) return res.sendStatus(401);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        currentUser.friends = removeId(currentUser.friends, targetId);
+        targetUser.friends = removeId(targetUser.friends, currentId);
+
+        currentUser.incomingRequests = removeId(currentUser.incomingRequests, targetId);
+        currentUser.outgoingRequests = removeId(currentUser.outgoingRequests, targetId);
+        targetUser.incomingRequests = removeId(targetUser.incomingRequests, currentId);
+        targetUser.outgoingRequests = removeId(targetUser.outgoingRequests, currentId);
+
+        await Promise.all([currentUser.save(), targetUser.save()]);
+
+        return res.status(200).json({ status: 'none' });
+    } catch (error) {
+        console.error('Error removing friend:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function listFriends(req, res) {
+    try {
+        const userId = req.params.id;
+        if (!ensureObjectId(userId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+        const user = await User.findById(userId, 'friends').lean();
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const friends = await User.find(
+            { _id: { $in: user.friends || [] } },
+            USER_PUBLIC_FIELDS
+        ).lean();
+
+        return res.status(200).json(friends || []);
+    } catch (error) {
+        console.error('Error listing friends:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export async function getFriendRequests(req, res) {
+    try {
+        const currentId = req.user?._id;
+        if (!currentId) return res.sendStatus(401);
+
+        const user = await User.findById(
+            currentId,
+            'incomingRequests outgoingRequests'
+        ).lean();
+        if (!user) return res.sendStatus(401);
+
+        const [incoming, outgoing] = await Promise.all([
+            User.find({ _id: { $in: user.incomingRequests || [] } }, FULL_PUBLIC_FIELDS).lean(),
+            User.find({ _id: { $in: user.outgoingRequests || [] } }, FULL_PUBLIC_FIELDS).lean(),
+        ]);
+
+        return res.status(200).json({
+            incoming: incoming || [],
+            outgoing: outgoing || [],
+        });
+    } catch (error) {
+        console.error('Error fetching friend requests:', error);
         return res.status(500).json({ error: error.message });
     }
 }
