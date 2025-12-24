@@ -96,6 +96,11 @@ export const photoLikesApi = {
     unlike: (photoId) => api.del(`/photos/${photoId}/like`),
 };
 
+// ===== Profile =====
+export const profileApi = {
+    update: (payload) => api.put('/user/me', payload),
+};
+
 // ===== Uploads =====
 export async function uploadPhoto(file) {
     const token = getToken();

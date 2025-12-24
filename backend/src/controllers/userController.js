@@ -129,6 +129,73 @@ export async function register(req, res) {
     }
 }
 
+// PUT /user/me
+export async function updateProfile(req, res) {
+    try {
+        const userId = req.user?._id;
+        if (!userId) return res.sendStatus(401);
+
+        const {
+            login_name,
+            first_name,
+            last_name,
+            location,
+            description,
+            occupation,
+        } = req.body || {};
+
+        const updates = {};
+
+        if (login_name !== undefined) {
+            if (typeof login_name !== 'string' || !login_name.trim()) {
+                return res.status(400).json({ error: 'login_name is required' });
+            }
+            const exists = await User.findOne({
+                login_name: login_name.trim(),
+                _id: { $ne: userId },
+            }).lean();
+            if (exists) {
+                return res.status(400).json({ error: 'login_name already exists' });
+            }
+            updates.login_name = login_name.trim();
+        }
+
+        if (first_name !== undefined) {
+            if (typeof first_name !== 'string' || !first_name.trim()) {
+                return res.status(400).json({ error: 'first_name is required' });
+            }
+            updates.first_name = first_name.trim();
+        }
+
+        if (last_name !== undefined) {
+            if (typeof last_name !== 'string' || !last_name.trim()) {
+                return res.status(400).json({ error: 'last_name is required' });
+            }
+            updates.last_name = last_name.trim();
+        }
+
+        if (location !== undefined) updates.location = location || '';
+        if (description !== undefined) updates.description = description || '';
+        if (occupation !== undefined) updates.occupation = occupation || '';
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No changes provided' });
+        }
+
+        const user = await User.findByIdAndUpdate(userId, updates, {
+            new: true,
+            fields: USER_DETAIL_FIELDS,
+        }).lean();
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        return res.status(200).json(user);
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 export async function getFriendStatus(req, res) {
     try {
         const targetId = req.params.id;

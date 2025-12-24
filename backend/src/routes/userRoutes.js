@@ -13,6 +13,7 @@ import {
     unfriend,
     listFriends,
     getFriendRequests,
+    updateProfile,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.post('/:id/friend-accept', acceptFriendRequest);
 router.post('/:id/friend-reject', rejectFriendRequest);
 router.post('/:id/friend-cancel', cancelFriendRequest);
 router.post('/:id/unfriend', unfriend);
+router.put('/me', updateProfile);
 router.get('/:id', getUserById);
 
 export default router;
