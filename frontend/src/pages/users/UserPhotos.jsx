@@ -1,22 +1,15 @@
 // src/pages/users/UserPhotos.jsx
-import React, { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import {
-    Typography,
-    Paper,
-    CardMedia,
-    TextField,
-    Button,
-    Box,
-} from "@mui/material";
-import { api, getUser, imageUrl, photoLikesApi } from "../../config/api";
-import PhotoComments from "../../components/comments/PhotoComments";
-import { formatDate } from "../../utils/format";
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Typography, Paper, CardMedia, TextField, Button, Box } from '@mui/material';
+import { api, getUser, imageUrl, photoLikesApi } from '../../config/api';
+import PhotoComments from '../../components/comments/PhotoComments';
+import { formatDate } from '../../utils/format';
 
 export default function UserPhotos() {
     const { userId } = useParams();
     const me = getUser();
-
+    const [boThich, setBoThich] = useState(null);
     const [photos, setPhotos] = useState(null);
     const [draft, setDraft] = useState({});
     const [submitting, setSubmitting] = useState({});
@@ -69,15 +62,15 @@ export default function UserPhotos() {
             if (String(ownerId) !== String(userId)) return;
             upsertPhoto(photo);
         };
-        window.addEventListener("photouploaded", handleUploaded);
-        return () => window.removeEventListener("photouploaded", handleUploaded);
+        window.addEventListener('photouploaded', handleUploaded);
+        return () => window.removeEventListener('photouploaded', handleUploaded);
     }, [upsertPhoto, userId]);
 
     const onChangeDraft = (photoId) => (e) =>
         setDraft((p) => ({ ...p, [photoId]: e.target.value }));
 
     const submitComment = async (photoId) => {
-        const text = (draft[photoId] || "").trim();
+        const text = (draft[photoId] || '').trim();
         if (!text) return;
 
         setSubmitting((p) => ({ ...p, [photoId]: true }));
@@ -90,7 +83,7 @@ export default function UserPhotos() {
                 (prev || []).map((p) => (p._id === photoId ? normalizePhoto(updatedPhoto) : p))
             );
 
-            setDraft((p) => ({ ...p, [photoId]: "" }));
+            setDraft((p) => ({ ...p, [photoId]: '' }));
         } catch (e) {
             alert(e.message);
         } finally {
@@ -103,7 +96,7 @@ export default function UserPhotos() {
     const canDelete = (photo) => {
         if (!me) return false;
         const ownerId = photo.user_id?._id || photo.user_id;
-        return me.role === "admin" || String(ownerId) === me._id;
+        return me.role === 'admin' || String(ownerId) === me._id;
     };
 
     const isLiked = (photo) => {
@@ -113,7 +106,7 @@ export default function UserPhotos() {
     };
 
     const handleDeletePhoto = async (photoId) => {
-        if (!window.confirm("Xóa ảnh này?")) return;
+        if (!window.confirm('Xóa ảnh này?')) return;
         setDeleting((p) => ({ ...p, [photoId]: true }));
         try {
             await api.del(`/photos/${photoId}`);
@@ -157,39 +150,54 @@ export default function UserPhotos() {
     if (!photos) return <div>Đang tải...</div>;
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {photos.map((photo) => (
-                <Paper key={photo._id} sx={{ p: 2, maxWidth: 720, mx: "auto" }}>
+                <Paper key={photo._id} sx={{ p: 2, maxWidth: 720, mx: 'auto' }}>
                     <CardMedia
                         component="img"
                         image={imageUrl(photo.file_name)}
                         alt={photo.file_name}
                         sx={{
-                            width: "100%",
+                            width: '100%',
                             height: { xs: 240, sm: 360, md: 480 },
-                            objectFit: "contain",
+                            objectFit: 'contain',
                             borderRadius: 2,
-                            bgcolor: "grey.100",
+                            bgcolor: 'grey.100',
                         }}
                     />
 
-                    <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <Typography variant="caption">{formatDate(photo.date_time)}</Typography>
-                        {me && (
-                            <Button
-                                size="small"
-                                variant={isLiked(photo) ? "contained" : "outlined"}
-                                color="error"
-                                onClick={() => toggleLike(photo._id)}
-                                disabled={!!liking[photo._id]}
-                            >
-                                {isLiked(photo) ? "Bỏ thích" : "Thích"} ({photo.likes?.length || 0})
-                            </Button>
+                    <Box
+                        sx={{
+                            mt: 1,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
+                        {boThich && (
+                            <>
+                                <Typography variant="caption">
+                                    {formatDate(photo.date_time)}
+                                </Typography>
+
+                                {me && (
+                                    <Button
+                                        size="small"
+                                        variant={isLiked(photo) ? 'contained' : 'outlined'}
+                                        color="error"
+                                        onClick={() => toggleLike(photo._id)}
+                                        disabled={!!liking[photo._id]}
+                                    >
+                                        {isLiked(photo) ? 'Bỏ thích' : 'Thích'} (
+                                        {photo.likes?.length || 0})
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </Box>
 
                     {canDelete(photo) && (
-                        <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+                        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
                                 size="small"
                                 color="error"
@@ -210,12 +218,12 @@ export default function UserPhotos() {
                     />
 
                     {me && (
-                        <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
+                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
                             <TextField
                                 fullWidth
                                 size="small"
                                 placeholder="Viết bình luận..."
-                                value={draft[photo._id] || ""}
+                                value={draft[photo._id] || ''}
                                 onChange={onChangeDraft(photo._id)}
                             />
                             <Button

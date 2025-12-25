@@ -1,7 +1,7 @@
 // src/pages/protected/Profile.jsx
-import React, { useCallback, useEffect, useState } from "react";
-import { Paper, Typography, Box, CardMedia, Button, TextField, Stack, Alert } from "@mui/material";
-import { Link } from "react-router-dom";
+import React, { useCallback, useEffect, useState } from 'react';
+import { Paper, Typography, Box, CardMedia, Button, TextField, Stack, Alert } from '@mui/material';
+import { Link } from 'react-router-dom';
 import {
     api,
     friendsApi,
@@ -11,9 +11,9 @@ import {
     profileApi,
     setAuth,
     getToken,
-} from "../../config/api";
-import PhotoComments from "../../components/comments/PhotoComments";
-import { formatDate } from "../../utils/format";
+} from '../../config/api';
+import PhotoComments from '../../components/comments/PhotoComments';
+import { formatDate } from '../../utils/format';
 
 export default function Profile() {
     const authUser = getUser();
@@ -27,15 +27,15 @@ export default function Profile() {
     const [loadingRequests, setLoadingRequests] = useState(true);
     const [friendAction, setFriendAction] = useState({});
     const [editData, setEditData] = useState({
-        first_name: "",
-        last_name: "",
-        location: "",
-        occupation: "",
-        description: "",
-        login_name: "",
+        first_name: '',
+        last_name: '',
+        location: '',
+        occupation: '',
+        description: '',
+        login_name: '',
     });
     const [savingProfile, setSavingProfile] = useState(false);
-    const [profileMessage, setProfileMessage] = useState("");
+    const [profileMessage, setProfileMessage] = useState('');
     const [editingProfile, setEditingProfile] = useState(false);
 
     const normalizePhoto = useCallback(
@@ -73,12 +73,12 @@ export default function Profile() {
                 if (alive) {
                     setDetail(u);
                     setEditData({
-                        first_name: u?.first_name || "",
-                        last_name: u?.last_name || "",
-                        location: u?.location || "",
-                        occupation: u?.occupation || "",
-                        description: u?.description || "",
-                        login_name: u?.login_name || "",
+                        first_name: u?.first_name || '',
+                        last_name: u?.last_name || '',
+                        location: u?.location || '',
+                        occupation: u?.occupation || '',
+                        description: u?.description || '',
+                        login_name: u?.login_name || '',
                     });
                 }
             } catch {
@@ -153,20 +153,20 @@ export default function Profile() {
             upsertPhoto(photo);
         };
 
-        window.addEventListener("photouploaded", handleUploaded);
-        return () => window.removeEventListener("photouploaded", handleUploaded);
+        window.addEventListener('photouploaded', handleUploaded);
+        return () => window.removeEventListener('photouploaded', handleUploaded);
     }, [authUser?._id, upsertPhoto]);
 
     const canDelete = (photo) => {
         if (!authUser?._id) return false;
         const ownerId = photo.user_id?._id || photo.user_id;
-        return authUser.role === "admin" || String(ownerId) === authUser._id;
+        return authUser.role === 'admin' || String(ownerId) === authUser._id;
     };
 
     const updatePhotoInState = (updatedPhoto) => upsertPhoto(updatedPhoto);
 
     const handleDelete = async (photoId) => {
-        if (!window.confirm("Xóa ảnh này?")) return;
+        if (!window.confirm('Xóa ảnh này?')) return;
         setDeleting((p) => ({ ...p, [photoId]: true }));
         try {
             await api.del(`/photos/${photoId}`);
@@ -211,8 +211,7 @@ export default function Profile() {
     const handleCancelOutgoing = (userId) =>
         withFriendAction(userId, () => friendsApi.cancel(userId));
 
-    const handleUnfriend = (userId) =>
-        withFriendAction(userId, () => friendsApi.unfriend(userId));
+    const handleUnfriend = (userId) => withFriendAction(userId, () => friendsApi.unfriend(userId));
 
     const isLiked = (photo) => {
         if (!authUser?._id) return false;
@@ -242,15 +241,15 @@ export default function Profile() {
 
     const handleSaveProfile = async () => {
         setSavingProfile(true);
-        setProfileMessage("");
+        setProfileMessage('');
         try {
             const updated = await profileApi.update(editData);
             setDetail(updated);
             setAuth({ token: getToken(), user: { ...authUser, ...updated } });
-            setProfileMessage("Đã lưu hồ sơ.");
+            setProfileMessage('Đã lưu hồ sơ.');
             setEditingProfile(false);
         } catch (e) {
-            setProfileMessage(e?.message || "Lưu hồ sơ thất bại.");
+            setProfileMessage(e?.message || 'Lưu hồ sơ thất bại.');
         } finally {
             setSavingProfile(false);
         }
@@ -261,14 +260,22 @@ export default function Profile() {
     }
 
     return (
-        <Box sx={{ width: "100%", display: "flex", justifyContent: "center", px: 2, py: 2 }}>
-            <Box sx={{ width: "100%", maxWidth: 1200, display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', px: 2, py: 2 }}>
+            <Box
+                sx={{
+                    width: '100%',
+                    maxWidth: 1200,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                }}
+            >
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", md: "7fr 5fr" },
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '7fr 5fr' },
                         gap: 2,
-                        alignItems: "start",
+                        alignItems: 'start',
                     }}
                 >
                     <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
@@ -276,108 +283,124 @@ export default function Profile() {
                             Hồ sơ của bạn
                         </Typography>
 
-                <Typography variant="subtitle1">
-                    Xin chào,&nbsp;
-                    <b>
-                        {authUser?.first_name} {authUser?.last_name}
-                    </b>{" "}
-                    ({authUser?.role || "user"})
-                </Typography>
+                        <Typography variant="subtitle1">
+                            Xin chào,&nbsp;
+                            <b>
+                                {authUser?.first_name} {authUser?.last_name}
+                            </b>{' '}
+                            ({authUser?.role || 'user'})
+                        </Typography>
 
-                {!editingProfile ? (
-                    <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-                        <Typography>Tên đăng nhập: {detail?.login_name}</Typography>
-                        <Typography>Họ tên: {detail?.first_name} {detail?.last_name}</Typography>
-                        <Typography>Địa chỉ: {detail?.location || "Chưa cập nhật"}</Typography>
-                        <Typography>Nghề nghiệp: {detail?.occupation || "Chưa cập nhật"}</Typography>
-                        <Typography>Mô tả: {detail?.description || "Chưa cập nhật"}</Typography>
+                        {!editingProfile ? (
+                            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <Typography>Tên đăng nhập: {detail?.login_name}</Typography>
+                                <Typography>
+                                    Họ tên: {detail?.first_name} {detail?.last_name}
+                                </Typography>
+                                <Typography>
+                                    Địa chỉ: {detail?.location || 'Chưa cập nhật'}
+                                </Typography>
+                                <Typography>
+                                    Nghề nghiệp: {detail?.occupation || 'Chưa cập nhật'}
+                                </Typography>
+                                <Typography>
+                                    Mô tả: {detail?.description || 'Chưa cập nhật'}
+                                </Typography>
 
-                        <Button variant="outlined" sx={{ mt: 1 }} onClick={() => setEditingProfile(true)}>
-                            Sửa hồ sơ
-                        </Button>
-                        {profileMessage && (
-                            <Alert severity="info" sx={{ py: 0, px: 1.5 }}>
-                                {profileMessage}
-                            </Alert>
-                        )}
-                    </Box>
-                ) : (
-                    <Stack spacing={2} sx={{ mt: 2 }}>
-                        <TextField
-                            label="Tên đăng nhập"
-                            value={editData.login_name}
-                            onChange={handleEditChange("login_name")}
-                            required
-                        />
-                        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                            <TextField
-                                label="Họ"
-                                value={editData.first_name}
-                                onChange={handleEditChange("first_name")}
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Tên"
-                                value={editData.last_name}
-                                onChange={handleEditChange("last_name")}
-                                required
-                                fullWidth
-                            />
-                        </Stack>
-                        <TextField
-                            label="Địa chỉ"
-                            value={editData.location}
-                            onChange={handleEditChange("location")}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Nghề nghiệp"
-                            value={editData.occupation}
-                            onChange={handleEditChange("occupation")}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Mô tả"
-                            value={editData.description}
-                            onChange={handleEditChange("description")}
-                            fullWidth
-                            multiline
-                            minRows={2}
-                        />
+                                <Button
+                                    variant="outlined"
+                                    sx={{ mt: 1 }}
+                                    onClick={() => setEditingProfile(true)}
+                                >
+                                    Sửa hồ sơ
+                                </Button>
+                                {profileMessage && (
+                                    <Alert severity="info" sx={{ py: 0, px: 1.5 }}>
+                                        {profileMessage}
+                                    </Alert>
+                                )}
+                            </Box>
+                        ) : (
+                            <Stack spacing={2} sx={{ mt: 2 }}>
+                                <TextField
+                                    label="Tên đăng nhập"
+                                    value={editData.login_name}
+                                    onChange={handleEditChange('login_name')}
+                                    required
+                                />
+                                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                    <TextField
+                                        label="Họ"
+                                        value={editData.first_name}
+                                        onChange={handleEditChange('first_name')}
+                                        required
+                                        fullWidth
+                                    />
+                                    <TextField
+                                        label="Tên"
+                                        value={editData.last_name}
+                                        onChange={handleEditChange('last_name')}
+                                        required
+                                        fullWidth
+                                    />
+                                </Stack>
+                                <TextField
+                                    label="Địa chỉ"
+                                    value={editData.location}
+                                    onChange={handleEditChange('location')}
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Nghề nghiệp"
+                                    value={editData.occupation}
+                                    onChange={handleEditChange('occupation')}
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Mô tả"
+                                    value={editData.description}
+                                    onChange={handleEditChange('description')}
+                                    fullWidth
+                                    multiline
+                                    minRows={2}
+                                />
 
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <Button variant="contained" onClick={handleSaveProfile} disabled={savingProfile}>
-                                Lưu hồ sơ
-                            </Button>
-                            <Button
-                                variant="text"
-                                onClick={() => {
-                                    setEditingProfile(false);
-                                    setEditData({
-                                        first_name: detail?.first_name || "",
-                                        last_name: detail?.last_name || "",
-                                        location: detail?.location || "",
-                                        occupation: detail?.occupation || "",
-                                        description: detail?.description || "",
-                                        login_name: detail?.login_name || "",
-                                    });
-                                }}
-                                disabled={savingProfile}
-                            >
-                                Hủy
-                            </Button>
-                            {profileMessage && (
-                                <Alert severity="info" sx={{ py: 0, px: 1.5 }}>
-                                    {profileMessage}
-                                </Alert>
-                            )}
-                        </Box>
-                    </Stack>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleSaveProfile}
+                                        disabled={savingProfile}
+                                    >
+                                        Lưu hồ sơ
+                                    </Button>
+                                    <Button
+                                        variant="text"
+                                        onClick={() => {
+                                            setEditingProfile(false);
+                                            setEditData({
+                                                first_name: detail?.first_name || '',
+                                                last_name: detail?.last_name || '',
+                                                location: detail?.location || '',
+                                                occupation: detail?.occupation || '',
+                                                description: detail?.description || '',
+                                                login_name: detail?.login_name || '',
+                                            });
+                                        }}
+                                        disabled={savingProfile}
+                                    >
+                                        Hủy
+                                    </Button>
+                                    {profileMessage && (
+                                        <Alert severity="info" sx={{ py: 0, px: 1.5 }}>
+                                            {profileMessage}
+                                        </Alert>
+                                    )}
+                                </Box>
+                            </Stack>
                         )}
                     </Paper>
 
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
                             <Typography variant="h6" gutterBottom>
                                 Lời mời kết bạn
@@ -385,18 +408,25 @@ export default function Profile() {
                             {loadingRequests ? (
                                 <Typography>Đang tải lời mời...</Typography>
                             ) : (
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                     <Box>
                                         <Typography variant="subtitle2" color="text.secondary">
                                             Đến với bạn
                                         </Typography>
                                         {friendRequests.incoming.length === 0 ? (
-                                            <Typography variant="body2">Chưa có lời mời mới.</Typography>
+                                            <Typography variant="body2">
+                                                Chưa có lời mời mới.
+                                            </Typography>
                                         ) : (
                                             friendRequests.incoming.map((u) => (
                                                 <Box
                                                     key={u._id}
-                                                    sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                        mt: 0.5,
+                                                    }}
                                                 >
                                                     <Typography sx={{ flex: 1 }}>
                                                         {u.first_name} {u.last_name}
@@ -427,12 +457,19 @@ export default function Profile() {
                                             Bạn đã gửi
                                         </Typography>
                                         {friendRequests.outgoing.length === 0 ? (
-                                            <Typography variant="body2">Chưa có yêu cầu đang chờ.</Typography>
+                                            <Typography variant="body2">
+                                                Chưa có yêu cầu đang chờ.
+                                            </Typography>
                                         ) : (
                                             friendRequests.outgoing.map((u) => (
                                                 <Box
                                                     key={u._id}
-                                                    sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                        mt: 0.5,
+                                                    }}
                                                 >
                                                     <Typography sx={{ flex: 1 }}>
                                                         {u.first_name} {u.last_name}
@@ -462,18 +499,18 @@ export default function Profile() {
                             ) : friends.length === 0 ? (
                                 <Typography>Chưa có bạn bè. Hãy gửi lời mời kết bạn!</Typography>
                             ) : (
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     {friends.map((f) => (
                                         <Box
                                             key={f._id}
-                                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                                         >
                                             <Typography
                                                 sx={{ flex: 1 }}
                                                 component={Link}
                                                 to={`/users/${f._id}`}
                                                 color="primary"
-                                                style={{ textDecoration: "none" }}
+                                                style={{ textDecoration: 'none' }}
                                             >
                                                 {f.first_name} {f.last_name}
                                             </Typography>
@@ -494,8 +531,10 @@ export default function Profile() {
                     </Box>
                 </Box>
 
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
-                    <Typography variant="h6" sx={{ alignSelf: "flex-start" }}>
+                <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}
+                >
+                    <Typography variant="h6" sx={{ alignSelf: 'flex-start' }}>
                         Ảnh của bạn
                     </Typography>
                     {photos === null && <Typography>Đang tải ảnh...</Typography>}
@@ -508,16 +547,24 @@ export default function Profile() {
                                 p: 2,
                                 borderRadius: 3,
                                 boxShadow: 1,
-                                display: "flex",
-                                flexDirection: "column",
+                                display: 'flex',
+                                flexDirection: 'column',
                                 gap: 1,
-                                width: "100%",
+                                width: '100%',
                                 maxWidth: 900,
                             }}
                         >
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <Typography variant="caption">{formatDate(photo.date_time)}</Typography>
-                                {authUser && (
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Typography variant="caption">
+                                    {formatDate(photo.date_time)}
+                                </Typography>
+                                {/* {authUser && (
                                     <Button
                                         size="small"
                                         variant={isLiked(photo) ? "contained" : "outlined"}
@@ -527,7 +574,7 @@ export default function Profile() {
                                     >
                                         {isLiked(photo) ? "Bỏ thích" : "Thích"} ({photo.likes?.length || 0})
                                     </Button>
-                                )}
+                                )} */}
                                 {canDelete(photo) && (
                                     <Button
                                         size="small"
@@ -546,11 +593,11 @@ export default function Profile() {
                                 image={imageUrl(photo.file_name)}
                                 alt={photo.file_name}
                                 sx={{
-                                    width: "100%",
+                                    width: '100%',
                                     height: { xs: 260, sm: 340, md: 420 },
-                                    objectFit: "contain",
+                                    objectFit: 'contain',
                                     borderRadius: 2,
-                                    bgcolor: "grey.100",
+                                    bgcolor: 'grey.100',
                                 }}
                             />
 
